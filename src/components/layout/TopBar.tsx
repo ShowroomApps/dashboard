@@ -1,19 +1,45 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuthContext } from '@/lib/auth-context';
 import { useSubscriptionStatus } from '@/lib/use-swr-hooks';
-import { Building2, LogOut, ShieldCheck, ChevronDown, AlertTriangle } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Building2, LogOut, ShieldCheck, ChevronDown, AlertTriangle, Key } from 'lucide-react';
 
 export function TopBar() {
   const { user, currentOrgId, organizations, setCurrentOrgId, logout } = useAuthContext();
   const { statusInfo } = useSubscriptionStatus(currentOrgId || undefined);
+  const toast = useToast();
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const currentOrg = organizations.find((o) => o.id === currentOrgId) || organizations[0];
   const isSuperAdmin = user?.is_platform_admin || user?.email === 'admin@showroomos.com';
 
   const daysRemaining = statusInfo?.daysRemaining;
   const showExpirationWarning = typeof daysRemaining === 'number' && daysRemaining <= 7 && daysRemaining >= 0;
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangingPassword(true);
+    setPasswordError('');
+    try {
+      await apiClient.patch('/auth/password', { password: newPassword });
+      toast.success('Password Updated', 'Your password has been changed successfully.');
+      setShowChangePassword(false);
+      setNewPassword('');
+    } catch (err: any) {
+      setPasswordError(err?.response?.data?.message || err?.message || 'Failed to update password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   return (
     <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-40">
@@ -74,6 +100,18 @@ export function TopBar() {
         </div>
 
         <button
+          onClick={() => {
+            setNewPassword('');
+            setPasswordError('');
+            setShowChangePassword(true);
+          }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-150"
+        >
+          <Key className="w-4 h-4" />
+          Change Password
+        </button>
+
+        <button
           onClick={logout}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all duration-150"
         >
@@ -81,6 +119,31 @@ export function TopBar() {
           Logout
         </button>
       </div>
+
+      <Modal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} title="Change My Password" size="md">
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {passwordError && (
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+              {passwordError}
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              placeholder="••••••••••"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-indigo-500 outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/60">
+            <Button variant="secondary" type="button" onClick={() => setShowChangePassword(false)}>Cancel</Button>
+            <Button type="submit" loading={changingPassword}><Key className="w-4 h-4" /> Update</Button>
+          </div>
+        </form>
+      </Modal>
     </header>
   );
 }

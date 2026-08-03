@@ -22,6 +22,12 @@ export default function ShowroomUsersPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordChanging, setPasswordChanging] = useState(false);
+  const [passwordChangeUserId, setPasswordChangeUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -68,6 +74,40 @@ export default function ShowroomUsersPage() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordChangeUserId) return;
+    
+    const targetOrgId = effectiveOrgId;
+    if (!targetOrgId) {
+      setError('Please select an active showroom organization');
+      return;
+    }
+
+    setPasswordChanging(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await apiClient.patch(`/organizations/${targetOrgId}/users/${passwordChangeUserId}/password`, {
+        password: newPassword,
+      });
+
+      const successMsg = 'Password changed successfully.';
+      setSuccess(successMsg);
+      toast.success('Success', successMsg);
+      setShowChangePassword(false);
+      setNewPassword('');
+      mutate();
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to change password';
+      setError(errMsg);
+      toast.error('Error', errMsg);
+    } finally {
+      setPasswordChanging(false);
+    }
+  };
+
   const columns = [
     {
       key: 'fullName',
@@ -98,9 +138,35 @@ export default function ShowroomUsersPage() {
       ),
     },
     {
+      key: 'password',
+      label: 'Password',
+      render: (row: any) => (
+        <span className="text-xs font-mono text-slate-300">
+          {row.password ? row.password : '••••••••'}
+        </span>
+      ),
+    },
+    {
       key: 'createdAt',
       label: 'Added Date',
       render: (row: any) => <span className="text-xs text-slate-400">{formatDate(row.createdAt || row.created_at)}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row: any) => (
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={() => {
+            setPasswordChangeUserId(row.id);
+            setShowChangePassword(true);
+            setNewPassword('');
+          }}
+        >
+          <Key className="w-3 h-3 mr-1" /> Change Password
+        </Button>
+      ),
     },
   ];
 
@@ -198,6 +264,34 @@ export default function ShowroomUsersPage() {
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/60">
             <Button variant="secondary" type="button" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button type="submit" loading={creating}><UserPlus className="w-4 h-4" /> Create User</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal isOpen={showChangePassword} onClose={() => setShowChangePassword(false)} title="Change User Password" size="md">
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              placeholder="••••••••••"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-indigo-500 outline-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/60">
+            <Button variant="secondary" type="button" onClick={() => setShowChangePassword(false)}>Cancel</Button>
+            <Button type="submit" loading={passwordChanging}><Key className="w-4 h-4" /> Save Password</Button>
           </div>
         </form>
       </Modal>

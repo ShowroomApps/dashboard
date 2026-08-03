@@ -81,7 +81,7 @@ export default function VehiclesPage() {
         await apiClient.patch(`/vehicles/${form.id}`, {
           make: form.make,
           model: form.model,
-          year: Number(form.year),
+          modelYear: Number(form.year),
           color: form.color,
           vin: form.vin || undefined,
           engineNumber: form.engineNumber || undefined,
@@ -99,7 +99,7 @@ export default function VehiclesPage() {
           branchId: defaultBranchId,
           make: form.make,
           model: form.model,
-          year: Number(form.year),
+          modelYear: Number(form.year),
           color: form.color,
           vin: form.vin || undefined,
           engineNumber: form.engineNumber || undefined,
