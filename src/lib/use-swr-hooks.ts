@@ -154,8 +154,14 @@ export function useExpenses(query?: { includeDeleted?: string }) {
   };
 }
 
-export function useChartOfAccounts() {
-  const { data, error, isLoading, mutate } = useSWR('/accounting/chart-of-accounts', fetcher);
+export function useChartOfAccounts(query?: { accountType?: string; search?: string; includeInactive?: boolean }) {
+  const params = new URLSearchParams();
+  if (query?.accountType) params.append('accountType', query.accountType);
+  if (query?.search) params.append('search', query.search);
+  if (query?.includeInactive !== undefined) params.append('includeInactive', String(query.includeInactive));
+  const url = `/accounting/chart-of-accounts${params.toString() ? `?${params.toString()}` : ''}`;
+
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher);
   return {
     accounts: data || [],
     isLoading,

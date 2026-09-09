@@ -36,19 +36,28 @@ export default function ExpensesPage() {
   const handleOpenCreate = () => {
     setError('');
     setIsEditing(false);
-    setForm(initialForm);
+    const defaultAcc = accounts.find((a: any) => a.code === '6400' || a.accountType === 'expense') || accounts[0];
+    setForm({
+      ...initialForm,
+      accountId: defaultAcc ? defaultAcc.id : '',
+    });
     setShowModal(true);
   };
 
   const handleOpenEdit = (row: any) => {
     setError('');
     setIsEditing(true);
+    let accId = row.accountId || row.account?.id || '';
+    if (!accId && row.account?.code) {
+      const matched = accounts.find((a: any) => a.code === row.account.code);
+      if (matched) accId = matched.id;
+    }
     setForm({
       id: row.id,
       category: row.category || 'Showroom Utilities',
       description: row.description || '',
       amount: Number(row.amount || 0),
-      accountId: row.accountId || '6400',
+      accountId: accId,
       expenseDate: row.expenseDate ? row.expenseDate.split('T')[0] : new Date().toISOString().split('T')[0],
       paymentMethod: row.paymentMethod || 'bank_transfer',
     });
@@ -136,8 +145,13 @@ export default function ExpensesPage() {
       key: 'category', label: 'Category / Account',
       render: (row: any) => (
         <div>
-          <div className="font-semibold text-white">{row.category || row.account?.name || 'General Expense'}</div>
-          <div className="text-xs text-slate-400">{row.description || '—'}</div>
+          <div className="font-semibold text-white">
+            {row.account ? `${row.account.code} — ${row.account.name}` : row.category || 'General Expense'}
+          </div>
+          <div className="text-xs text-slate-400">
+            {row.account && row.category && row.category !== row.account.name ? `${row.category} • ` : ''}
+            {row.description || '—'}
+          </div>
         </div>
       ),
     },
@@ -243,11 +257,18 @@ export default function ExpensesPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Chart of Account</label>
-              <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} required
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-indigo-500 outline-none">
+              <select
+                value={form.accountId}
+                onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                required
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-indigo-500 outline-none"
+              >
+                <option value="">Select Account...</option>
                 {accounts.length > 0 ? (
                   accounts.map((a: any) => (
-                    <option key={a.id} value={a.code}>{a.code} — {a.name}</option>
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name} ({a.accountType.toUpperCase()})
+                    </option>
                   ))
                 ) : (
                   <>
