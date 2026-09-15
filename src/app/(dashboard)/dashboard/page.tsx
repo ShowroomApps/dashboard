@@ -16,10 +16,9 @@ export default function DashboardPage() {
   const { expenses } = useExpenses();
 
   // Computed Financial metrics
-  const totalInventoryValue = vehicles.reduce(
-    (sum: number, v: any) => sum + (parseFloat(v.costBasis) || 0),
-    0,
-  );
+  const totalInventoryValue = vehicles
+    .filter((v: any) => v.status === 'available')
+    .reduce((sum: number, v: any) => sum + (parseFloat(v.costBasis) || 0), 0);
   const totalSalesRevenue = sales.reduce(
     (sum: number, s: any) => sum + (parseFloat(s.sellingPrice) || 0),
     0,
