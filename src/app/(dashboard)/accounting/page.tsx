@@ -776,6 +776,10 @@ export default function AccountingPage() {
                 />
                 Show Inactive
               </label>
+
+              <Button onClick={handleOpenCreate} className="ml-2 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs px-3 py-1.5 whitespace-nowrap">
+                <Plus className="w-3.5 h-3.5" /> Add Account
+              </Button>
             </div>
           </div>
 
